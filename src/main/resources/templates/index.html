@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head">
+    <meta charset="UTF-8"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2.0">
+    <title>Todo Demo</title>
+    <link rel="stylesheet" type="text/css" href="/semantic/dist/semantic.min.css">
+    <link href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <style>
+
+        body > .ui.container {
+            margin-top: 3em;
+        }
+
+        .ui.container > h1 {
+            font-size: 3em;
+            text-align: center;
+            font-weight: normal;
+            margin: 0em 3em 0.8em;
+        }
+
+        .ui.container > h3 {
+            font-size: 1.5em;
+            text-align: center;
+            font-weight: normal;
+            margin: 4em 1.5em 2em;
+        }
+
+        .ui.list {
+            font-size: 1.3em;
+        }
+
+        .ui.list.todo {
+            text-align: left;
+        }
+        .ui.list.done {
+            text-decoration: line-through;
+            text-align: left;
+        }
+
+        .item-text {
+            margin-left: 4em;
+            float: right;
+        }
+        .list-complete-item {
+            transition: all 1s;
+        }
+        .list-complete-enter, .list-complete-leave-to
+            /* .list-complete-leave-active for below version 2.1.8 */ {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+    </style>
+</head>
+<body>
+<div id="app" class="ui container">
+    <h1>{{ message }}</h1>
+    <hr>
+    <h3>新建事项</h3>
+    <div class="ui grid container centered">
+        <form class="ui small form three wide">
+            <div class="field">
+                <input type="text" v-model="newTodoItem.title" placeholder="待办事项">
+            </div>
+        </form>
+        <button class="ui tiny button primary" type="submit" @click="newTodo">添加</button>
+    </div>
+    <h3>待办事项</h3>
+    <div class="ui grid container centered ui list todo">
+        <ul>
+            <transition-group name="list-complete">
+            <li class="item small list-complete-item" v-for="item in todoList" :key="item.id" v-if="!item.done">{{ item.title }}
+                <span class="item-text">
+                    <input type="checkbox" v-model="item.done" class="ui checkbox radio" @change="updateTodo(item)">
+                    <a  @click="deleteTodo(item.id)"><i class="fa fa-trash-o"></i></a>
+                </span>
+            </li>
+            </transition-group>
+        </ul>
+    </div>
+    <h3>完成事项</h3>
+    <div class="ui grid container centered ui list done">
+        <ul>
+            <transition-group name="list-complete">
+            <li class="item list-complete-item" v-for="item in todoList" :key="item.id" v-if="item.done">{{ item.title }}
+                <span class="item-text">
+                    <input type="checkbox" v-model="item.done" class="ui checkbox" @change="updateTodo(item)">
+                    <a  @click="deleteTodo(item.id)"><i class="fa fa-trash-o"></i></a>
+                </span>
+            </li>
+            </transition-group>
+        </ul>
+    </div>
+</div>
+</body>
+<script src="/semantic/dist/semantic.min.js"></script>
+<script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js"></script>
+<script src="https://cdn.bootcss.com/vue/2.4.4/vue.min.js"></script>
+<script src="https://cdn.bootcss.com/vue-resource/1.3.4/vue-resource.min.js"></script>
+<script>
+    var vue = new Vue({
+        el: '#app',
+        data: {
+            message: 'Spring WebFlux Todo Demo',
+            todoList: [],
+            todoItem: {
+                title: undefined,
+                done: false
+            },
+            newTodoItem: {
+                title: undefined,
+                done: false
+            }
+        },
+        created: function () {
+            this.listTodos();
+        },
+        methods: {
+            listTodos: function () {
+                var vm = this;
+                vm.$http.get("/todo")
+                    .then(function (res) {
+                        vm.todoList = res.body;
+                    })
+                    .catch(function (res) {
+                    });
+            },
+            newTodo: function () {
+                var vm = this;
+                var payload = vm.newTodoItem;
+                vm.$http.post("/todo", payload)
+                    .then(function (res) {
+                        vm.listTodos();
+                        vm.newTodoItem = vm.todoItem;
+                    })
+                    .catch(function (res) {
+                    });
+            },
+            updateTodo: function (item) {
+                var vm = this;
+                var payload = item;
+                console.log(payload)
+                vm.$http.post("/todo", payload)
+                    .then(function (res) {
+                        vm.listTodos();
+                    })
+                    .catch(function (res) {
+                        console.log(res)
+                    });
+            },
+            deleteTodo: function (id) {
+                var vm = this;
+                vm.$http.delete("/todo/" + id)
+                    .then(function (res) {
+                        vm.listTodos();
+                    })
+                    .catch(function (res) {
+                        console.log(res)
+                    });
+            }
+        }
+    });
+</script>
+</html>
